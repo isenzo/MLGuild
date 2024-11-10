@@ -1,0 +1,10 @@
+name: MLGuilds
+version: '${project.version}'
+main: me.isenzo.mlguilds.Main
+api-version: '1.18'
+authors: [Senzo13]
+commands:
+  guild:
+    description: Główna komenda gildii
+    aliases: [gildia, g]
+softdepend: [Vault, LuckPerms]

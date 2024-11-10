@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<!DOCTYPE xml>
+<project name="MlStoneDrop" default="Build">
+
+    <target name="Build">
+        <jar jarfile="C:\MC_serwer\1.20.1\plugins\${ant.project.name}.jar" basedir="./target/classes/" includes="**/*"/>
+    </target>
+
+</project>
