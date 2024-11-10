@@ -22,7 +22,8 @@ public class DataSourceManager {
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl("jdbc:postgresql://localhost:5432/mlguilds");
         config.setUsername("postgres");
-        config.setPassword("your_password");
+        config.setPassword("hestia4d");
+        config.setDriverClassName("org.postgresql.Driver");
 
         plugin.getLogger().info("Configuring data source...");
         return new HikariDataSource(config);
