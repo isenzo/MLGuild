@@ -2,7 +2,7 @@ package me.isenzo.mlguilds.command.validation;
 
 import lombok.RequiredArgsConstructor;
 import me.isenzo.mlguilds.Main;
-import me.isenzo.mlguilds.guild.database.GuildData;
+import me.isenzo.mlguilds.guild.repository.GuildRepository;
 import org.bukkit.entity.Player;
 
 import java.sql.Connection;
@@ -14,7 +14,7 @@ import java.sql.SQLException;
 public class PlayerCommandValidation {
 
     private final Main plugin;
-    private final GuildData guildData;
+    private final GuildRepository guildRepository;
 
     public String validateGuildCreation(Player player, String name, String tag) {
         if (isPlayerInGuild(player)) {
@@ -45,7 +45,7 @@ public class PlayerCommandValidation {
     }
 
     private boolean isPlayerInGuild(Player player) {
-        try (Connection conn = guildData.getDataSource().getConnection();
+        try (Connection conn = guildRepository.getDataSource().getConnection();
              PreparedStatement pstmt = conn.prepareStatement("SELECT 1 FROM guilds WHERE founder_id = (SELECT id FROM players WHERE uuid = ?)")) {
             pstmt.setString(1, player.getUniqueId().toString());
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -58,7 +58,7 @@ public class PlayerCommandValidation {
     }
 
     private boolean isNameUnique(String name) {
-        try (Connection conn = guildData.getDataSource().getConnection();
+        try (Connection conn = guildRepository.getDataSource().getConnection();
              PreparedStatement pstmt = conn.prepareStatement("SELECT 1 FROM guilds WHERE name = ?")) {
             pstmt.setString(1, name);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -71,7 +71,7 @@ public class PlayerCommandValidation {
     }
 
     private boolean isTagUnique(String tag) {
-        try (Connection conn = guildData.getDataSource().getConnection();
+        try (Connection conn = guildRepository.getDataSource().getConnection();
              PreparedStatement pstmt = conn.prepareStatement("SELECT 1 FROM guilds WHERE tag = ?")) {
             pstmt.setString(1, tag);
             try (ResultSet rs = pstmt.executeQuery()) {
