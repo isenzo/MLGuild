@@ -12,6 +12,8 @@ public enum Messages {
     GUILD_CREATE_SUCCESS("guild_create_success"),
     GUILD_CREATE_FAIL("guild_create_fail"),
     ALREADY_IN_GUILD("already_in_guild"),
+    NOT_IN_ANY_GUILD("not_in_any_guild"),
+    PLAYER_IN_ALREADY_CREATED_GUILD("player_in_already_created_guild"),
     INVALID_TAG_FORMAT("invalid_tag_format"),
     INVALID_USAGE("invalid_usage"),
     NAME_IS_ALREADY_TAKEN("name_is_already_taken"),

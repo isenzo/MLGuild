@@ -8,12 +8,16 @@ import me.isenzo.mlguilds.file.ConfigManager;
 import me.isenzo.mlguilds.gui.GuildItemsGUI;
 import me.isenzo.mlguilds.guild.GuildService;
 import me.isenzo.mlguilds.guild.database.DataSourceManager;
-import me.isenzo.mlguilds.guild.database.GuildData;
+import me.isenzo.mlguilds.guild.database.DatabaseInitializer;
+import me.isenzo.mlguilds.guild.repository.GuildRepository;
+import me.isenzo.mlguilds.guild.repository.PlayerRepository;
 import me.isenzo.mlguilds.message.MessageManager;
+import me.isenzo.mlguilds.player.events.PlayerJoinListener;
 import net.luckperms.api.LuckPerms;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import redis.clients.jedis.JedisPool;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -26,7 +30,8 @@ public final class Main extends JavaPlugin {
     private GuildService guildService;
     private MessageManager messageManager;
     private GuildCommand guildCommand;
-    private GuildData guildData;
+    private GuildRepository guildRepository;
+    private PlayerRepository playerRepository;
     private Economy economyApi;
     private LuckPerms luckPermsApi;
 //    private WorldEdit worldEditApi;
@@ -35,6 +40,7 @@ public final class Main extends JavaPlugin {
     private ConfigManager configManager;
     private GuildItemsGUI guildItemsGUI;
     private DataSourceManager dataSourceManager;
+    private DatabaseInitializer databaseInitializer;
 
     @Override
     public void onEnable() {
@@ -50,17 +56,21 @@ public final class Main extends JavaPlugin {
         luckPermsApi = registerServiceProvider(LuckPerms.class);
 
         this.dataSourceManager = new DataSourceManager(this);
-        this.guildData = new GuildData(dataSourceManager);
-        this.guildData.initializeDatabase();
+        this.databaseInitializer = new DatabaseInitializer(dataSourceManager, this);
+        databaseInitializer.initializeDatabase();
+
+        this.guildRepository = new GuildRepository(dataSourceManager);
+        this.playerRepository = new PlayerRepository(dataSourceManager, new JedisPool());
         this.configManager = new ConfigManager(this);
-        this.playerCommandValidation = new PlayerCommandValidation(this, guildData);
+        this.playerCommandValidation = new PlayerCommandValidation(this, guildRepository);
         this.messageManager = new MessageManager(this, new Locale("pl"));
-        this.guildService = new GuildService(this, guildData, playerCommandValidation);
-        this.guildCommand = new GuildCommand(this);
+        this.guildService = new GuildService(this, guildRepository, playerCommandValidation);
+        this.guildCommand = new GuildCommand(this, guildRepository);
         this.guildItemsGUI = new GuildItemsGUI(this);
 
         Objects.requireNonNull(this.getCommand("guild")).setExecutor(guildCommand);
         getServer().getPluginManager().registerEvents(guildItemsGUI, this);
+        getServer().getPluginManager().registerEvents(new PlayerJoinListener(playerRepository), this);
     }
 
 

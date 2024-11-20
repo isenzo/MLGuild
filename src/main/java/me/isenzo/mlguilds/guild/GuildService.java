@@ -4,44 +4,83 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import me.isenzo.mlguilds.Main;
 import me.isenzo.mlguilds.command.validation.PlayerCommandValidation;
-import me.isenzo.mlguilds.guild.database.GuildData;
-import me.isenzo.mlguilds.message.MessageUtils;
-import me.isenzo.mlguilds.message.Messages;
+import me.isenzo.mlguilds.guild.repository.GuildRepository;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
-import java.sql.SQLException;
-import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 @RequiredArgsConstructor
 @Getter
 public class GuildService {
 
     private final Main plugin;
-    private final GuildData guildData;
+    private final GuildRepository guildRepository;
     private final PlayerCommandValidation validation;
 
     public boolean createGuild(Player player, String guildName, String guildTag) {
-        guildData.addPlayerIfNotExists(player);
-        String validationMessage = validation.validateGuildCreation(player, guildName, guildTag);
+        String playerUUID = player.getUniqueId().toString();
 
-        if (Objects.nonNull(validationMessage)) {
-            player.sendMessage(ChatColor.RED + validationMessage);
-            return false;
-        }
+        guildRepository.playerExists(playerUUID)
+                .thenCompose(exists -> {
+                    if (!exists) {
+                        sendPlayerMessageAsync(player, ChatColor.RED + "Twoje dane nie zostały jeszcze zapisane w systemie. Spróbuj ponownie później.");
+                        return CompletableFuture.completedFuture(false);
+                    }
+                    return guildRepository.isPlayerInGuild(playerUUID);
+                })
+                .thenCompose(isInGuild -> {
+                    if (isInGuild) {
+                        sendPlayerMessageAsync(player, ChatColor.RED + "Nie możesz utworzyć nowej gildii, ponieważ już należysz do jednej.");
+                        return CompletableFuture.completedFuture(false);
+                    }
+                    return guildRepository.isPlayerInCreatedGuild(playerUUID);
+                })
+                .thenCompose(isInCreateProcess -> {
+                    if (isInCreateProcess) {
+                        sendPlayerMessageAsync(player, ChatColor.RED + "Już jesteś w trakcie tworzenia gildii. Wpisz /g depozyt, aby kontynuować proces.");
+                        return CompletableFuture.completedFuture(false);
+                    }
 
-        if (!plugin.getGuildItemsGUI().allItemsDeposited(player)) {
-            MessageUtils.sendToPlayer(player, Messages.REQUIREMENTS_NOT_MET, guildName, guildTag);
-            return false;
-        }
+                    String validationMessage = validation.validateGuildCreation(player, guildName, guildTag);
+                    if (validationMessage != null) {
+                        sendPlayerMessageAsync(player, ChatColor.RED + validationMessage);
+                        return CompletableFuture.completedFuture(false);
+                    }
 
-        try {
-            guildData.addGuild(guildName, guildTag, player);
-            MessageUtils.sendToPlayer(player, Messages.GUILD_CREATE_SUCCESS, guildName, guildTag);
-            return true;
-        } catch (SQLException e) {
-            MessageUtils.sendToPlayer(player, Messages.GUILD_CREATION_ERROR, guildName, guildTag);
-            return false;
-        }
+                    return guildRepository.updatePlayerCreatingGuildStatus(playerUUID, true)
+                            .thenCompose(aVoid -> guildRepository.addGuildAsync(guildName, guildTag, player))
+                            .thenCompose(success -> {
+                                if (!success) {
+                                    sendPlayerMessageAsync(player, "Wystąpił błąd podczas tworzenia gildii.");
+                                    return CompletableFuture.completedFuture(false);
+                                }
+                                return guildRepository.getGuildIDByName(guildName)
+                                        .thenCompose(guildIdOpt -> {
+                                            if (guildIdOpt.isEmpty()) {
+                                                return CompletableFuture.completedFuture(false);
+                                            }
+                                            int guildId = guildIdOpt.get();
+                                            return guildRepository.updatePlayerGuildId(playerUUID, guildId)
+                                                    .thenCompose(aVoid -> guildRepository.updatePlayerGuildStatus(playerUUID, true))
+                                                    .thenCompose(v -> guildRepository.updateGuildMemberCount(guildName, 1))
+                                                    .thenApply(v -> true);
+                                        });
+                            });
+                })
+                .thenAccept(finalSuccess -> {
+                    if (finalSuccess) {
+                        sendPlayerMessageAsync(player, ChatColor.GREEN + "Gildia została utworzona pomyślnie!");
+                    } else {
+                        sendPlayerMessageAsync(player, ChatColor.RED + "Wystąpił błąd podczas tworzenia gildii.");
+                    }
+                });
+
+        return true;
+    }
+
+    private void sendPlayerMessageAsync(Player player, String message) {
+        Bukkit.getScheduler().runTask(plugin, () -> player.sendMessage(message));
     }
 }

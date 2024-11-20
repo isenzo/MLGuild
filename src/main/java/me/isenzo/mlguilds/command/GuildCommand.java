@@ -3,6 +3,9 @@ package me.isenzo.mlguilds.command;
 import me.isenzo.mlguilds.Main;
 import me.isenzo.mlguilds.command.create.GuildCreateCommand;
 import me.isenzo.mlguilds.command.delete.GuildDeleteCommand;
+import me.isenzo.mlguilds.command.deposit.GuildDepositCommand;
+import me.isenzo.mlguilds.command.edit.GuildEditNameCommand;
+import me.isenzo.mlguilds.guild.repository.GuildRepository;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -14,12 +17,16 @@ import java.util.Map;
 public class GuildCommand implements CommandExecutor {
 
     private final Map<String, CommandExecutor> subCommands;
+    private final GuildRepository guildRepository;
 
-    public GuildCommand(Main plugin) {
+    public GuildCommand(Main plugin, GuildRepository guildRepository) {
+        this.guildRepository = guildRepository;
         this.subCommands = new HashMap<>();
 
-        subCommands.put("stworz", new GuildCreateCommand(plugin));
+        subCommands.put("zaloz", new GuildCreateCommand(plugin));
         subCommands.put("usun", new GuildDeleteCommand());
+        subCommands.put("depozyt", new GuildDepositCommand(plugin));
+        subCommands.put("zmien", new GuildEditNameCommand(plugin));
     }
 
     @Override

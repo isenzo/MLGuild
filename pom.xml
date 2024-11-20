@@ -4,10 +4,18 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>me.isenzo</groupId>
-    <artifactId>MLGuilds</artifactId>
-    <version>1.1</version>
+    <groupId>com.github.isenzo</groupId>
+    <artifactId>ml-guilds</artifactId>
+    <version>1.1.0</version>
     <packaging>jar</packaging>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/isenzo/MLGuild</url>
+        </repository>
+    </distributionManagement>
 
     <name>MLGuilds</name>
 
@@ -137,6 +145,11 @@
             <groupId>com.mojang</groupId>
             <artifactId>authlib</artifactId>
             <version>3.3.39</version>
+        </dependency>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>5.2.0</version>
         </dependency>
         <dependency>
             <groupId>com.zaxxer</groupId>
